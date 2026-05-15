@@ -528,18 +528,18 @@ function renderFoldStep(step) {
       el('p', { class: 'fold-tip-text' }, FOLD_TIPS[foldNum])
     ),
     renderTodoList(true),
-    timerDone
-      ? el('div', { class: 'fold-return' },
-          late > 0
+    el('div', { class: 'fold-return' },
+      timerDone
+        ? late > 0
             ? el('p', { class: 'fold-late' },
                 `You're ${late} minute${late === 1 ? '' : 's'} over. The dough is fine — get back to it.`)
-            : el('p', { class: 'fold-ready' }, 'Time to get back to it.'),
-          isLastFold
-            ? el('button', { class: 'btn-primary', 'data-action': 'advance-from-fold' }, 'Continue')
-            : el('button', { class: 'btn-primary', 'data-action': 'advance-and-start-timer' },
-                'Start 25 minute timer')
-        )
-      : false
+            : el('p', { class: 'fold-ready' }, 'Time to get back to it.')
+        : false,
+      isLastFold
+        ? el('button', { class: 'btn-primary', 'data-action': 'advance-from-fold', disabled: timerRunning }, 'Continue')
+        : el('button', { class: 'btn-primary', 'data-action': 'advance-and-start-timer', disabled: timerRunning },
+            'Start 25 minute timer')
+    )
   );
 }
 
