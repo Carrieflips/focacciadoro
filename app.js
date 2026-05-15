@@ -150,6 +150,7 @@ const INGREDIENTS = [
 const EQUIPMENT = [
   { name: 'Scale', tag: 'highly recommended' },
   'Large bowl with lid',
+  'Small bowl',
   '9" square or 13x9 baking pan',
   'Bowl scraper or spatula',
   'Whisk',
@@ -408,6 +409,7 @@ const MIX_INSTRUCTIONS = [
   ], tip: 'If you want to be more precise, look for the recommended temperature on the back of your yeast packet or jar.' },
   'Mix until fully combined with no dry patches — use a spatula, scraper, or your hands.',
   'Cover the bowl and set it aside.',
+  'Add water to a small bowl, and place it near your dough bowl. This is for easily dipping your hand in water when folding the dough.',
   'Wash your hands.',
 ];
 
