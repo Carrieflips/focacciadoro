@@ -322,12 +322,12 @@ function renderPWAPrompt() {
 
   return el('div', { class: 'pwa-prompt' },
     el('p', { class: 'pwa-copy' },
-      'Before you start — add this to your home screen. It’s the only way your timer can reach you when your phone is locked or you’ve switched apps. Takes 10 seconds.'
+      `Before you start — add this to your home screen. It's the only way your timer can reach you when your phone is locked or you've switched apps. Takes 10 seconds.`
     ),
     el('ol', { class: 'pwa-instructions' },
       ...instructions.map(text => el('li', {}, text))
     ),
-    el('button', { class: 'btn-ghost', 'data-action': 'pwa-skip' }, 'I’ll skip this')
+    el('button', { class: 'btn-ghost', 'data-action': 'pwa-skip' }, `I'll skip this`)
   );
 }
 
@@ -351,7 +351,7 @@ function renderNotificationSection() {
   // Permission still 'default' — show explainer
   return el('div', { class: 'notification-section' },
     el('p', { class: 'notification-explainer' },
-      'Allow notifications so your timer can reach you — even when this tab isn’t open.'
+      `Allow notifications so your timer can reach you — even when this tab isn't open.`
     ),
     el('button', { class: 'btn-secondary', 'data-action': 'request-notifications' },
       'Allow notifications')
@@ -372,7 +372,7 @@ function renderPrepStep() {
                     Notification.permission !== 'default';
 
   return el('div', { class: 'container prep-step' },
-    el(‘h2’, { class: ‘prep-heading’ }, ‘Let\’s gather the stuff.’),
+    el('h2', { class: 'prep-heading' }, 'Let\'s gather the stuff.'),
     renderIngredientChecklist(),
     renderChecklistSection('Equipment', EQUIPMENT, 'eq'),
     renderPWAPrompt(),
@@ -382,7 +382,7 @@ function renderPrepStep() {
         class: 'btn-primary',
         'data-action': 'advance-from-prep',
         disabled: !ctaActive,
-      }, 'I have everything, let’s go'),
+      }, `I have everything, let's go`),
       el('button', {
         class: 'btn-link',
         'data-action': 'amazon-referral',
