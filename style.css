@@ -1180,6 +1180,28 @@ small {
   margin-top: var(--space-sm);
 }
 
+.mix-cleanup-tip {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: var(--radius);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.mix-cleanup-heading {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #1E40AF;
+  margin-bottom: var(--space-xs);
+}
+
+.mix-cleanup-text {
+  font-size: 0.9375rem;
+  color: #1E3A8A;
+  line-height: 1.65;
+}
+
 .mix-divider {
   border: none;
   border-top: 1px solid var(--color-border);

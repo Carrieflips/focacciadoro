@@ -452,6 +452,10 @@ function renderMixStep() {
       'Your dough is resting. So can your mind — for just a moment. What do you want to accomplish in the next 25 minutes? Keep it simple.'
     ),
     renderTodoList(true),
+    el('div', { class: 'mix-cleanup-tip' },
+      el('p', { class: 'mix-cleanup-heading' }, 'Clean along the way'),
+      el('p', { class: 'mix-cleanup-text' }, 'Put away the sugar, salt, yeast. You\'re done with the whisk, measuring cups, and scale.')
+    ),
     el('div', { class: 'rise-cta' },
       el('button', { class: 'btn-primary', 'data-action': 'advance-and-start-timer' },
         'Start 25 minute timer')
