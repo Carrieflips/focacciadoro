@@ -342,8 +342,8 @@ function renderNotificationSection() {
 
   if (state.notificationsGranted === true) {
     return el('div', { class: 'notification-confirmed' },
-      el('span', { class: 'notification-confirmed-text' }, 'Notifications enabled'),
-      el('button', { class: 'btn-ghost btn-test-notification', 'data-action': 'test-notification' }, 'Test')
+      el('p', { class: 'notification-confirmed-text' }, 'Notifications enabled'),
+      el('button', { class: 'btn-secondary btn-test-notification', 'data-action': 'test-notification' }, 'Test sound')
     );
   }
 
