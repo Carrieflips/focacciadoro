@@ -415,7 +415,7 @@ function renderMixStep() {
   return el('div', { class: 'container mix-step' },
     el('p', { class: 'step-label' }, 'Mix the Dough'),
     el('ol', { class: 'mix-instructions' },
-      ...MIX_INSTRUCTIONS.map(instr => {
+      ...MIX_INSTRUCTIONS.map((instr, i) => {
         if (typeof instr === 'string') return el('li', { class: 'mix-instruction' }, instr);
         if (Array.isArray(instr)) {
           const parts = instr.map(p => typeof p === 'string' ? p : el('strong', {}, p.b));
