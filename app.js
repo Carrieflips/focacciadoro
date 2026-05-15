@@ -95,37 +95,44 @@ steps.forEach(step => {
 
 const AMAZON_REFERRAL_URL = 'https://www.amazon.com'; // TODO: replace with affiliate link before launch
 
-// Each ingredient: { name, measure, info }
+// Each ingredient: { name, measure, grams?, info }
+// grams is optional — omit for "to taste" quantities.
 // info appears in the expandable detail panel — update freely before launch.
 const INGREDIENTS = [
   {
     name: 'Flour',
     measure: '3 cups all-purpose',
+    grams: '360g',
     info: 'All-purpose flour works great here. Bread flour will give you a chewier crumb — also excellent. Avoid cake flour.',
   },
   {
     name: 'Salt',
-    measure: '1½ tsp table',
+    measure: '1½ teaspoons',
+    grams: '9g',
     info: 'Table salt dissolves evenly into the dough. Using kosher salt? Increase to 2 tsp.',
   },
   {
     name: 'Sugar',
-    measure: '1 tsp',
+    measure: '1 teaspoon',
+    grams: '4g',
     info: 'Feeds the yeast and encourages browning. Don\'t skip it, even though the bread isn\'t sweet.',
   },
   {
     name: 'Instant yeast',
-    measure: '1 tsp',
+    measure: '1 teaspoon',
+    grams: '3g',
     info: 'Instant (or rapid-rise) yeast goes straight into the dry ingredients — no proofing needed. Active dry yeast works too, but dissolve it in the warm water first and wait 5 minutes.',
   },
   {
     name: 'Warm water',
-    measure: '1¼ cups (90–110°F)',
+    measure: '1¼ cups',
+    grams: '295g',
     info: 'Too hot kills the yeast; too cold and it won\'t activate. 100°F is a safe target — warm to the touch, not hot. A kitchen thermometer is helpful, but your wrist works too.',
   },
   {
     name: 'Olive oil',
-    measure: '1½ tbsp extra-virgin',
+    measure: '1½ tablespoons extra-virgin',
+    grams: '20g',
     info: 'Goes into the dough. Use something you\'d be happy to dip bread in — the flavor comes through.',
   },
   {
@@ -141,10 +148,11 @@ const INGREDIENTS = [
 ];
 
 const EQUIPMENT = [
-  'Scale',
+  { name: 'Scale', tag: 'highly recommended' },
   'Large bowl with lid',
   '9" square or 13x9 baking pan',
   'Bowl scraper or spatula',
+  'Whisk',
 ];
 
 /* ─── Rise microcopy ─────────────────────────────────────────────────────────*/
@@ -248,7 +256,10 @@ function renderIngredientChecklist() {
           el('span', { class: 'ingredient-text' },
             el('span', { class: 'ingredient-name' }, item.name),
             el('span', { class: 'ingredient-sep' }, ', '),
-            el('span', { class: 'ingredient-measure' }, item.measure)
+            el('span', { class: 'ingredient-measure' }, item.measure),
+            item.grams
+              ? el('span', { class: 'ingredient-grams' }, item.grams)
+              : false
           ),
           el('span', { class: 'chevron', 'aria-hidden': 'true' })
         ),
@@ -267,13 +278,16 @@ function renderChecklistSection(heading, items, idPrefix) {
   return el('div', { class: 'checklist-section' },
     el('p', { class: 'checklist-heading' }, heading),
     el('div', { class: 'checklist' },
-      ...items.map((item, i) =>
-        el('label', { class: 'checklist-row' },
+      ...items.map((item, i) => {
+        const name = typeof item === 'string' ? item : item.name;
+        const tag  = typeof item === 'object' ? item.tag : null;
+        return el('label', { class: 'checklist-row' },
           el('input', { type: 'checkbox', class: 'checklist-input', id: `${idPrefix}-${i}` }),
           el('span', { class: 'checklist-check', 'aria-hidden': 'true' }),
-          el('span', { class: 'checklist-text' }, item)
-        )
-      )
+          el('span', { class: 'checklist-text' }, name),
+          tag ? el('span', { class: 'checklist-tag' }, tag) : false
+        );
+      })
     )
   );
 }
@@ -379,9 +393,19 @@ function renderPrepStep() {
 steps[0].render = renderPrepStep;
 
 /* ─── Mix step (Step 1) ──────────────────────────────────────────────────────*/
+// Instructions are plain strings, arrays of mixed parts ({ b: 'text' } = bold),
+// or { header, items } objects that render as a sub-bulleted list.
 const MIX_INSTRUCTIONS = [
-  'Whisk together flour, salt, sugar, and yeast in your large bowl.',
-  'Add the warm water and olive oil.',
+  { header: 'In a large bowl, whisk together:', items: [
+    [{b:'Salt'}, ' — 1½ teaspoons (9g)'],
+    [{b:'Sugar'}, ' — 1 teaspoon (4g)'],
+    [{b:'Instant yeast'}, ' — 1 teaspoon (3g)'],
+    [{b:'Flour'}, ' — 3 cups (360g)'],
+  ], tip: 'If you aren\'t using a scale, remember to fluff your flour by stirring it with a spoon or whisk in its container before measuring. Packed flour can weigh almost 40g more per cup, making your focaccia more dense and dry.' },
+  { header: 'Add to the bowl:', items: [
+    [{b:'Olive oil'}, ' — 1½ tablespoons (20g) extra-virgin'],
+    [{b:'Warm water'}, ' — 1¼ cups (295g)'],
+  ], tip: 'If you want to be more precise, look for the recommended temperature on the back of your yeast packet or jar.' },
   'Mix until fully combined with no dry patches — use a spatula, scraper, or your hands.',
   'Cover the bowl and set it aside.',
   'Wash your hands.',
@@ -391,8 +415,32 @@ function renderMixStep() {
   return el('div', { class: 'container mix-step' },
     el('p', { class: 'step-label' }, 'Mix the Dough'),
     el('ol', { class: 'mix-instructions' },
-      ...MIX_INSTRUCTIONS.map(text => el('li', { class: 'mix-instruction' }, text))
+      ...MIX_INSTRUCTIONS.map(instr => {
+        if (typeof instr === 'string') return el('li', { class: 'mix-instruction' }, instr);
+        if (Array.isArray(instr)) {
+          const parts = instr.map(p => typeof p === 'string' ? p : el('strong', {}, p.b));
+          return el('li', { class: 'mix-instruction' }, ...parts);
+        }
+        // { header, items, tip? } — header + sub-checklist + optional tip
+        const subItems = instr.items.map((parts, j) =>
+          el('label', { class: 'checklist-row mix-subitem' },
+            el('input', { type: 'checkbox', class: 'checklist-input', id: `mix-item-${i}-${j}` }),
+            el('span', { class: 'checklist-check', 'aria-hidden': 'true' }),
+            el('span', { class: 'checklist-text' },
+              ...parts.map(p => typeof p === 'string' ? p : el('strong', {}, p.b))
+            )
+          )
+        );
+        return el('li', { class: 'mix-instruction' },
+          instr.header,
+          el('div', { class: 'checklist mix-sublist' }, ...subItems),
+          instr.tip
+            ? el('p', { class: 'mix-tip' }, instr.tip)
+            : false
+        );
+      })
     ),
+    el('hr', { class: 'mix-divider' }),
     el('blockquote', { class: 'mix-prompt' },
       'Your dough is resting. So can your mind — for just a moment. What do you want to accomplish in the next 25 minutes? Keep it simple.'
     ),
