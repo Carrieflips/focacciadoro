@@ -340,7 +340,12 @@ function renderNotificationSection() {
     state.notificationsGranted = false;
   }
 
-  if (state.notificationsGranted === true) return null; // CTA already active
+  if (state.notificationsGranted === true) {
+    return el('div', { class: 'notification-confirmed' },
+      el('span', { class: 'notification-confirmed-text' }, 'Notifications enabled'),
+      el('button', { class: 'btn-ghost btn-test-notification', 'data-action': 'test-notification' }, 'Test')
+    );
+  }
 
   if (state.notificationsGranted === false) {
     return el('div', { class: 'notification-warning' },
@@ -1187,6 +1192,12 @@ app.addEventListener('click', (e) => {
         }
         render();
       });
+      break;
+
+    case 'test-notification':
+      initAudio();
+      playChime();
+      scheduleNotification('Focadoro', 'Notifications are working. Your timer will reach you.', 0);
       break;
 
     case 'advance-from-prep':

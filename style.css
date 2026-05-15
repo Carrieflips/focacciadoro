@@ -799,6 +799,23 @@ small {
   color: #92400E;
 }
 
+.notification-confirmed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
+}
+
+.notification-confirmed-text {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.btn-test-notification {
+  font-size: 0.8125rem;
+  padding: 3px 10px;
+}
+
 /* ─── Buttons: secondary & link variants ─────────────────────────────────── */
 
 .btn-secondary {
