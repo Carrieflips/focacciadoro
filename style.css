@@ -283,6 +283,18 @@ small {
   cursor: default;
 }
 
+.step-skip-btn {
+  pointer-events: all;
+  margin-top: var(--space-sm);
+  font-size: 0.75rem;
+  color: var(--color-text-ghost);
+  padding: 0;
+}
+
+.step-skip-btn:hover {
+  color: var(--color-text-muted);
+}
+
 .step-future-name {
   color: var(--color-text-muted);
   font-family: var(--font-sans);
@@ -1201,8 +1213,8 @@ small {
 }
 
 .mix-cleanup-tip {
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
+  background: #F0FDFA;
+  border: 1px solid #99F6E4;
   border-radius: var(--radius);
   padding: var(--space-lg);
   margin-bottom: var(--space-xl);
@@ -1212,13 +1224,13 @@ small {
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: 0.875rem;
-  color: #1E40AF;
+  color: #0F766E;
   margin-bottom: var(--space-xs);
 }
 
 .mix-cleanup-text {
   font-size: 0.9375rem;
-  color: #1E3A8A;
+  color: #134E4A;
   line-height: 1.65;
 }
 

@@ -204,6 +204,7 @@ function deleteTodo(id) {
 }
 
 function renderTodoList(interactive) {
+  if (!interactive && state.todos.length === 0) return false;
   const items = state.todos.map(todo =>
     el('div', {
       class: todo.completed ? 'todo-item todo-item--done' : 'todo-item',
@@ -327,13 +328,13 @@ function renderPWAPrompt() {
       ];
 
   return el('div', { class: 'pwa-prompt' },
+    el('p', { class: 'fold-tip-label' }, 'Important'),
     el('p', { class: 'pwa-copy' },
-      `Before you start — add this to your home screen. It's the only way your timer can reach you when your phone is locked or you've switched apps. Takes 10 seconds.`
+      `Ensure your timer alarm can reach you when your phone is locked or you've switched apps.`
     ),
     el('ol', { class: 'pwa-instructions' },
       ...instructions.map(text => el('li', {}, text))
-    ),
-    el('button', { class: 'btn-ghost', 'data-action': 'pwa-skip' }, `I'll skip this`)
+    )
   );
 }
 
@@ -414,14 +415,14 @@ const MIX_INSTRUCTIONS = [
     [{b:'Instant yeast'}, ' — 1 teaspoon (3g)'],
     [{b:'Flour'}, ' — 3 cups (360g)'],
   ], tipLabel: 'Flour tip', tip: 'If you aren\'t using a scale, remember to fluff your flour by stirring it with a spoon or whisk in its container before measuring. Packed flour can weigh almost 40g more per cup, making your focaccia more dense and dry.' },
-  { header: 'Add to the bowl:', items: [
+  { header: 'After the dry ingredients are whisked, add to the bowl:', items: [
     [{b:'Olive oil'}, ' — 1½ tablespoons (20g) extra-virgin'],
     [{b:'Warm water'}, ' — 1¼ cups (295g)'],
   ], tipLabel: 'Water tip', tip: 'If you want to be more precise, look for the recommended temperature on the back of your yeast packet or jar.' },
-  'Mix until fully combined with no dry patches — use a spatula, scraper, or your hands.',
+  'Mix until fully combined with no dry lumps using a spatula, scraper, or your hands.',
   'Cover the bowl and set it aside.',
   'Add water to a small bowl, and place it near your dough bowl. This is for easily dipping your hand in water when folding the dough.',
-  'Wash your hands.',
+  'Wash your hands. No need to pre-heat the oven yet.',
 ];
 
 function renderMixStep() {
@@ -947,7 +948,12 @@ function renderStepShell(step) {
       el('div', { class: 'container' },
         el('p', { class: 'step-future-name' }, step.name),
         el('p', { class: 'step-future-time' },
-          step.estimatedMinutes > 0 ? `~${step.estimatedMinutes} min` : '')
+          step.estimatedMinutes > 0 ? `~${step.estimatedMinutes} min` : ''),
+        el('button', {
+          class: 'btn-ghost step-skip-btn',
+          'data-action': 'skip-to-step',
+          'data-step-index': String(i),
+        }, 'Skip to this step')
       )
     );
   }
@@ -1199,6 +1205,17 @@ window.deleteTodo    = deleteTodo;
 
 /* ─── Event delegation (single listener, survives re-renders) ────────────────*/
 app.addEventListener('click', (e) => {
+  // Skip-to-step must be checked before the broad step-tap handler below
+  const skipBtn = e.target.closest('[data-action="skip-to-step"]');
+  if (skipBtn) {
+    const idx = parseInt(skipBtn.dataset.stepIndex, 10);
+    const stepName = steps[idx].name;
+    if (confirm(`Are you sure? This will cancel any current timers and start the timer on ${stepName}.`)) {
+      advanceTo(idx);
+    }
+    return;
+  }
+
   // Tapping any past or future step while peeking returns to current
   if (state.view === 'session' && isOffCurrent()) {
     const stepEl = e.target.closest('.step--past, .step--future');
