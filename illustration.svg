@@ -1,0 +1,17 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  class="illustration-header"
+  viewBox="0 0 390 220"
+  preserveAspectRatio="xMidYMid meet"
+  role="img"
+  aria-label="Kitchen illustration placeholder"
+>
+  <rect
+    x="0.5" y="0.5"
+    width="389" height="219"
+    rx="6"
+    fill="#FAF8F5"
+    stroke="#E8E4DC"
+    stroke-width="1"
+  />
+</svg>
