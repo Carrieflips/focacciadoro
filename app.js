@@ -442,7 +442,10 @@ function renderMixStep() {
           instr.header,
           el('div', { class: 'checklist mix-sublist' }, ...subItems),
           instr.tip
-            ? el('p', { class: 'mix-tip' }, instr.tip)
+            ? el('div', { class: 'fold-tip' },
+                el('p', { class: 'fold-tip-label' }, 'Tip'),
+                el('p', { class: 'fold-tip-text' }, instr.tip)
+              )
             : false
         );
       })
