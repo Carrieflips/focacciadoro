@@ -970,11 +970,30 @@ small {
   padding-bottom: var(--space-xl);
 }
 
+.fold-timer-sentinel {
+  height: 0;
+  visibility: hidden;
+}
+
 .fold-timer-block {
+  position: sticky;
+  top: var(--strip-h, 44px);
+  z-index: 9;
+  background: var(--color-bg);
   text-align: center;
   padding: var(--space-lg) 0;
   margin-bottom: var(--space-xl);
   border-bottom: 1px solid var(--color-border);
+  transition: padding 0.2s ease;
+}
+
+.fold-timer-block--stuck {
+  padding: var(--space-xs) var(--space-md);
+}
+
+.fold-timer-block--stuck .timer-display--ambient {
+  font-size: 1.375rem;
+  letter-spacing: 0;
 }
 
 .fold-instructions {
@@ -992,6 +1011,7 @@ small {
 }
 
 .fold-tip {
+  margin-top: var(--space-lg);
   margin-bottom: var(--space-xl);
 }
 

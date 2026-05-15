@@ -175,20 +175,26 @@ const FOLD_TIPS = [
 ];
 
 /* ─── To-do list module ──────────────────────────────────────────────────────*/
+function incompleteTodos() {
+  return state.todos.filter(t => !t.completed);
+}
+
 function addTodo(text) {
-  if (state.todos.length >= 3) return;
+  if (incompleteTodos().length >= 3) return;
   state.todos.push({ id: Date.now(), text, completed: false });
   track('task_added');
   render();
 }
 
 function completeTodo(id) {
-  const todo = state.todos.find(t => t.id === id);
-  if (todo) {
-    todo.completed = true;
-    track('task_completed');
-    render();
-  }
+  const idx = state.todos.findIndex(t => t.id === id);
+  if (idx === -1) return;
+  state.todos[idx].completed = true;
+  // Move completed task to the top so active tasks stay grouped at the bottom
+  const [done] = state.todos.splice(idx, 1);
+  state.todos.unshift(done);
+  track('task_completed');
+  render();
 }
 
 function deleteTodo(id) {
@@ -222,7 +228,7 @@ function renderTodoList(interactive) {
     )
   );
 
-  const canAdd = interactive && state.todos.length < 3;
+  const canAdd = interactive && incompleteTodos().length < 3;
 
   return el('div', { class: 'todo-section' },
     el('p', { class: 'todo-heading' }, 'Focus tasks'),
@@ -239,8 +245,8 @@ function renderTodoList(interactive) {
           }),
           el('button', { type: 'submit', class: 'todo-add-btn' }, '+')
         )
-      : interactive && state.todos.length >= 3
-        ? el('p', { class: 'todo-max' }, 'Three tasks. Pick the one that matters most.')
+      : interactive && incompleteTodos().length >= 3
+        ? el('p', { class: 'todo-max' }, 'Three tasks maximum.')
         : false
   );
 }
@@ -407,11 +413,11 @@ const MIX_INSTRUCTIONS = [
     [{b:'Sugar'}, ' — 1 teaspoon (4g)'],
     [{b:'Instant yeast'}, ' — 1 teaspoon (3g)'],
     [{b:'Flour'}, ' — 3 cups (360g)'],
-  ], tip: 'If you aren\'t using a scale, remember to fluff your flour by stirring it with a spoon or whisk in its container before measuring. Packed flour can weigh almost 40g more per cup, making your focaccia more dense and dry.' },
+  ], tipLabel: 'Flour tip', tip: 'If you aren\'t using a scale, remember to fluff your flour by stirring it with a spoon or whisk in its container before measuring. Packed flour can weigh almost 40g more per cup, making your focaccia more dense and dry.' },
   { header: 'Add to the bowl:', items: [
     [{b:'Olive oil'}, ' — 1½ tablespoons (20g) extra-virgin'],
     [{b:'Warm water'}, ' — 1¼ cups (295g)'],
-  ], tip: 'If you want to be more precise, look for the recommended temperature on the back of your yeast packet or jar.' },
+  ], tipLabel: 'Water tip', tip: 'If you want to be more precise, look for the recommended temperature on the back of your yeast packet or jar.' },
   'Mix until fully combined with no dry patches — use a spatula, scraper, or your hands.',
   'Cover the bowl and set it aside.',
   'Add water to a small bowl, and place it near your dough bowl. This is for easily dipping your hand in water when folding the dough.',
@@ -443,22 +449,22 @@ function renderMixStep() {
           el('div', { class: 'checklist mix-sublist' }, ...subItems),
           instr.tip
             ? el('div', { class: 'fold-tip' },
-                el('p', { class: 'fold-tip-label' }, 'Tip'),
+                el('p', { class: 'fold-tip-label' }, instr.tipLabel || 'Tip'),
                 el('p', { class: 'fold-tip-text' }, instr.tip)
               )
             : false
         );
       })
     ),
+    el('div', { class: 'mix-cleanup-tip' },
+      el('p', { class: 'mix-cleanup-heading' }, 'Clean along the way'),
+      el('p', { class: 'mix-cleanup-text' }, 'Put away the sugar, salt, yeast. You\'re done with the whisk, measuring cups, and scale.')
+    ),
     el('hr', { class: 'mix-divider' }),
     el('blockquote', { class: 'mix-prompt' },
       'Your dough is resting. So can your mind — for just a moment. What do you want to accomplish in the next 25 minutes? Keep it simple.'
     ),
     renderTodoList(true),
-    el('div', { class: 'mix-cleanup-tip' },
-      el('p', { class: 'mix-cleanup-heading' }, 'Clean along the way'),
-      el('p', { class: 'mix-cleanup-text' }, 'Put away the sugar, salt, yeast. You\'re done with the whisk, measuring cups, and scale.')
-    ),
     el('div', { class: 'rise-cta' },
       el('button', { class: 'btn-primary', 'data-action': 'advance-and-start-timer' },
         'Start 25 minute timer')
@@ -514,6 +520,7 @@ function renderFoldStep(step) {
 
   return el('div', { class: 'container fold-step' },
     el('p', { class: 'step-label' }, step.name),
+    el('div', { class: 'fold-timer-sentinel' }),
     el('div', { class: 'fold-timer-block' },
       el('span', {
         id: 'timer-display',
@@ -1000,6 +1007,30 @@ function render() {
 
   if (state.alarmActive) children.push(renderAlarmOverlay());
   app.replaceChildren(...children);
+  setupStickyTimer();
+}
+
+/* ─── Sticky fold timer ──────────────────────────────────────────────────────*/
+let _stickyObserver = null;
+
+function setupStickyTimer() {
+  if (_stickyObserver) { _stickyObserver.disconnect(); _stickyObserver = null; }
+
+  const sentinel  = document.querySelector('.fold-timer-sentinel');
+  const timerBlock = document.querySelector('.fold-timer-block');
+  if (!sentinel || !timerBlock) return;
+
+  // Offset below the sticky progress strip
+  const strip = document.querySelector('.progress-strip');
+  if (strip) {
+    document.documentElement.style.setProperty('--strip-h', strip.offsetHeight + 'px');
+  }
+
+  _stickyObserver = new IntersectionObserver(([entry]) => {
+    timerBlock.classList.toggle('fold-timer-block--stuck', !entry.isIntersecting);
+  }, { threshold: 0 });
+
+  _stickyObserver.observe(sentinel);
 }
 
 /* ─── Navigation ─────────────────────────────────────────────────────────────*/
