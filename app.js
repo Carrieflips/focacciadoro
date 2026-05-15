@@ -371,7 +371,7 @@ function renderPrepStep() {
                     Notification.permission !== 'default';
 
   return el('div', { class: 'container prep-step' },
-    el('h2', { class: 'prep-heading' }, 'Let’s get everything ready.'),
+    el(‘h2’, { class: ‘prep-heading’ }, ‘Let\’s gather the stuff.’),
     renderIngredientChecklist(),
     renderChecklistSection('Equipment', EQUIPMENT, 'eq'),
     renderPWAPrompt(),
