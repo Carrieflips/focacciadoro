@@ -64,16 +64,16 @@ const state = {
 /* ─── Steps ──────────────────────────────────────────────────────────────────*/
 const steps = [
   { id: 'prep',       index: 0,  name: 'Get Prepped',            estimatedMinutes: 15, type: 'prep' },
-  { id: 'mix',        index: 1,  name: 'Mix the Dough',          estimatedMinutes: 10, type: 'work' },
-  { id: 'rise-1',     index: 2,  name: 'Rise 1 of 4',            estimatedMinutes: 30, type: 'work' },
-  { id: 'fold-1',     index: 3,  name: 'Fold Break 1',           estimatedMinutes: 5,  type: 'fold' },
-  { id: 'rise-2',     index: 4,  name: 'Rise 2 of 4',            estimatedMinutes: 30, type: 'work' },
-  { id: 'fold-2',     index: 5,  name: 'Fold Break 2',           estimatedMinutes: 5,  type: 'fold' },
-  { id: 'rise-3',     index: 6,  name: 'Rise 3 of 4',            estimatedMinutes: 30, type: 'work' },
-  { id: 'fold-3',     index: 7,  name: 'Fold Break 3',           estimatedMinutes: 5,  type: 'fold' },
-  { id: 'rise-4',     index: 8,  name: 'Rise 4 of 4',            estimatedMinutes: 30, type: 'work' },
-  { id: 'fold-4',     index: 9,  name: 'Fold Break 4',           estimatedMinutes: 5,  type: 'fold' },
-  { id: 'pan',        index: 10, name: 'Move Dough to Pan',      estimatedMinutes: 10, type: 'work' },
+  { id: 'alarm',      index: 1,  name: 'Set Up Alerts',          estimatedMinutes: 2,  type: 'prep' },
+  { id: 'mix',        index: 2,  name: 'Mix the Dough',          estimatedMinutes: 10, type: 'work' },
+  { id: 'rise-1',     index: 3,  name: 'Rise 1 of 4',            estimatedMinutes: 30, type: 'work' },
+  { id: 'fold-1',     index: 4,  name: 'Fold Break 1',           estimatedMinutes: 5,  type: 'fold' },
+  { id: 'rise-2',     index: 5,  name: 'Rise 2 of 4',            estimatedMinutes: 30, type: 'work' },
+  { id: 'fold-2',     index: 6,  name: 'Fold Break 2',           estimatedMinutes: 5,  type: 'fold' },
+  { id: 'rise-3',     index: 7,  name: 'Rise 3 of 4',            estimatedMinutes: 30, type: 'work' },
+  { id: 'fold-3',     index: 8,  name: 'Fold Break 3',           estimatedMinutes: 5,  type: 'fold' },
+  { id: 'rise-4',     index: 9,  name: 'Rise 4 of 4',            estimatedMinutes: 30, type: 'work' },
+  { id: 'fold-4',     index: 10, name: 'Fold and Flop',          estimatedMinutes: 5,  type: 'fold' },
   { id: 'pan-rise-1', index: 11, name: 'Pan Rise — First Half',  estimatedMinutes: 30, type: 'work' },
   { id: 'pan-rise-2', index: 12, name: 'Pan Rise — Second Half', estimatedMinutes: 30, type: 'work' },
   { id: 'bake',       index: 13, name: 'Bake — First Check',     estimatedMinutes: 15, type: 'bake' },
@@ -300,73 +300,78 @@ function renderChecklistSection(heading, items, idPrefix) {
   );
 }
 
-function renderPWAPrompt() {
+function renderAlarmSection() {
   const platform = getPlatform();
-  if (platform === 'desktop') return null;
 
   if (!state.pwaPromptShown) {
     track('pwa_prompt_shown', { platform });
     state.pwaPromptShown = true;
   }
 
-  if (state.pwaDismissed) {
-    return el('div', { class: 'pwa-warning' },
-      el('p', {}, 'Notifications may not reach you.')
-    );
+  // Sync notification state
+  if ('Notification' in window) {
+    if (Notification.permission === 'granted') state.notificationsGranted = true;
+    if (Notification.permission === 'denied' && state.notificationsGranted === null) {
+      state.notificationsGranted = false;
+    }
   }
 
-  const instructions = platform === 'ios'
-    ? [
-        'Tap the Share button in Safari (the box with an arrow)',
-        'Scroll down and tap “Add to Home Screen”',
-        'Tap “Add”',
-      ]
-    : [
-        'Tap the three-dot menu in Chrome',
-        'Tap “Add to Home Screen” or “Install App”',
-        'Tap “Install”',
-      ];
+  // Step 2: notification sub-content
+  let notifContent = null;
+  if ('Notification' in window) {
+    if (state.notificationsGranted === true) {
+      notifContent = el('div', { class: 'notification-confirmed' },
+        el('p', { class: 'notification-confirmed-text' }, 'Notifications enabled'),
+        el('button', { class: 'btn-secondary btn-test-notification', 'data-action': 'test-notification' }, 'Test sound')
+      );
+    } else if (state.notificationsGranted === false) {
+      notifContent = el('div', { class: 'notification-warning' },
+        el('p', {}, 'Notifications are off. Keep this tab open and your volume up.')
+      );
+    } else {
+      notifContent = el('button', { class: 'btn-secondary', 'data-action': 'request-notifications' }, 'Allow notifications');
+    }
+  }
 
-  return el('div', { class: 'pwa-prompt' },
-    el('p', { class: 'fold-tip-label' }, 'Important'),
-    el('p', { class: 'pwa-copy' },
-      `Ensure your timer alarm can reach you when your phone is locked or you've switched apps.`
-    ),
-    el('ol', { class: 'pwa-instructions' },
+  // Step 3: PWA homescreen sub-steps (mobile only)
+  let pwaContent = null;
+  if (platform !== 'desktop') {
+    const instructions = platform === 'ios'
+      ? [
+          'Tap the Share button in Safari (the box with an arrow)',
+          'Scroll down and tap “Add to Home Screen”',
+          'Tap “Add”',
+        ]
+      : [
+          'Tap the three-dot menu in Chrome',
+          'Tap “Add to Home Screen” or “Install App”',
+          'Tap “Install”',
+        ];
+    pwaContent = el('ol', { class: 'pwa-instructions' },
       ...instructions.map(text => el('li', {}, text))
-    )
-  );
-}
-
-function renderNotificationSection() {
-  if (!('Notification' in window)) return null;
-
-  // Sync with live browser permission state
-  if (Notification.permission === 'granted') state.notificationsGranted = true;
-  if (Notification.permission === 'denied' && state.notificationsGranted === null) {
-    state.notificationsGranted = false;
-  }
-
-  if (state.notificationsGranted === true) {
-    return el('div', { class: 'notification-confirmed' },
-      el('p', { class: 'notification-confirmed-text' }, 'Notifications enabled'),
-      el('button', { class: 'btn-secondary btn-test-notification', 'data-action': 'test-notification' }, 'Test sound')
     );
   }
 
-  if (state.notificationsGranted === false) {
-    return el('div', { class: 'notification-warning' },
-      el('p', {}, 'Notifications are off. Keep this tab open and your volume up.')
-    );
-  }
-
-  // Permission still 'default' — show explainer
-  return el('div', { class: 'notification-section' },
-    el('p', { class: 'notification-explainer' },
-      `Allow notifications so your timer can reach you — even when this tab isn't open.`
+  return el('div', {},
+    el('h2', { class: 'prep-heading' }, `Don't miss the timer alarm`),
+    el('ol', { class: 'alarm-steps' },
+      el('li', { class: 'alarm-step' }, 'Make sure your sound is up.'),
+      notifContent
+        ? el('li', { class: 'alarm-step' }, 'Turn notifications on.', notifContent)
+        : false,
     ),
-    el('button', { class: 'btn-secondary', 'data-action': 'request-notifications' },
-      'Allow notifications')
+    pwaContent
+      ? el('div', { class: 'alarm-section' },
+          el('ol', { class: 'alarm-steps', start: '3' },
+            el('li', { class: 'alarm-step' },
+              el('span', { class: 'fold-tip-label' }, 'Important'),
+              'Add Focacciadoro to your home screen. ',
+              el('strong', {}, `Your alarm will not ring if your phone is locked or you've switched apps.`),
+              pwaContent
+            )
+          )
+        )
+      : false
   );
 }
 
@@ -379,22 +384,15 @@ function renderPrepStep() {
     }
   }
 
-  const ctaActive = !('Notification' in window) ||
-                    state.notificationsGranted !== null ||
-                    Notification.permission !== 'default';
-
   return el('div', { class: 'container prep-step' },
-    el('h2', { class: 'prep-heading' }, 'Let\'s gather the stuff.'),
+    el('h2', { class: 'prep-heading' }, 'Gather the stuff'),
     renderIngredientChecklist(),
     renderChecklistSection('Equipment', EQUIPMENT, 'eq'),
-    renderPWAPrompt(),
-    renderNotificationSection(),
     el('div', { class: 'prep-ctas' },
       el('button', {
         class: 'btn-primary',
         'data-action': 'advance-from-prep',
-        disabled: !ctaActive,
-      }, `I have everything, let's go`),
+      }, `I've got the goods`),
       el('button', {
         class: 'btn-link',
         'data-action': 'amazon-referral',
@@ -405,7 +403,19 @@ function renderPrepStep() {
 
 steps[0].render = renderPrepStep;
 
-/* ─── Mix step (Step 1) ──────────────────────────────────────────────────────*/
+/* ─── Alarm step (Step 1) ────────────────────────────────────────────────────*/
+function renderAlarmStep() {
+  return el('div', { class: 'container prep-step' },
+    renderAlarmSection(),
+    el('div', { class: 'prep-ctas' },
+      el('button', { class: 'btn-primary', 'data-action': 'begin-baking' }, 'Begin baking')
+    )
+  );
+}
+
+steps[1].render = renderAlarmStep;
+
+/* ─── Mix step (Step 2) ──────────────────────────────────────────────────────*/
 // Instructions are plain strings, arrays of mixed parts ({ b: 'text' } = bold),
 // or { header, items } objects that render as a sub-bulleted list.
 const MIX_INSTRUCTIONS = [
@@ -427,7 +437,7 @@ const MIX_INSTRUCTIONS = [
 
 function renderMixStep() {
   return el('div', { class: 'container mix-step' },
-    el('p', { class: 'step-label' }, 'Mix the Dough'),
+    el('h2', { class: 'prep-heading' }, 'Make the dough'),
     el('ol', { class: 'mix-instructions' },
       ...MIX_INSTRUCTIONS.map((instr, i) => {
         if (typeof instr === 'string') return el('li', { class: 'mix-instruction' }, instr);
@@ -473,11 +483,11 @@ function renderMixStep() {
   );
 }
 
-steps[1].render = renderMixStep;
+steps[2].render = renderMixStep;
 
 /* ─── Rise steps (indices 2, 4, 6, 8) ───────────────────────────────────────*/
 function renderRiseStep(step) {
-  const riseIdx = [2, 4, 6, 8].indexOf(step.index); // 0-based → selects microcopy
+  const riseIdx = [3, 5, 7, 9].indexOf(step.index); // 0-based → selects microcopy
   const timerRunning = state.timerInterval !== null;
   const microcopy = RISE_MICROCOPY[riseIdx % RISE_MICROCOPY.length];
 
@@ -508,7 +518,7 @@ function renderRiseStep(step) {
 
 /* ─── Fold steps (indices 3, 5, 7, 9) ───────────────────────────────────────*/
 function renderFoldStep(step) {
-  const foldNum = [3, 5, 7, 9].indexOf(step.index); // 0-based → selects tip
+  const foldNum = [4, 6, 8, 10].indexOf(step.index); // 0-based → selects tip
   const timerRunning = state.timerInterval !== null;
   const timerDone = !timerRunning && state.timerEndTime !== null;
   const late = timerDone ? minutesSinceTimerEnd() : 0;
@@ -517,7 +527,7 @@ function renderFoldStep(step) {
     ? Math.max(0, Math.round((state.timerEndTime - Date.now()) / 1000))
     : 0;
 
-  const isLastFold = step.index === 9; // fold-4 → pan next, not a rise
+  const isLastFold = step.index === 10; // fold-4 → pan rise next
 
   return el('div', { class: 'container fold-step' },
     el('p', { class: 'step-label' }, step.name),
@@ -528,13 +538,36 @@ function renderFoldStep(step) {
         class: 'timer-display timer-display--ambient',
       }, timerRunning ? formatTime(timeRemaining) : '00:00')
     ),
-    el('div', { class: 'fold-instructions' },
-      el('p', { class: 'fold-instructions-text' }, FOLD_INSTRUCTIONS)
-    ),
+    foldNum === 0
+      ? el('div', { class: 'fold-instructions' },
+          el('p', { class: 'fold-instructions-text' }, FOLD_INSTRUCTIONS)
+        )
+      : el('details', { class: 'fold-instructions fold-instructions--collapsible' },
+          el('summary', { class: 'fold-instructions-summary' }, 'How to fold'),
+          el('p', { class: 'fold-instructions-text' }, FOLD_INSTRUCTIONS)
+        ),
     el('div', { class: 'fold-tip' },
       el('p', { class: 'fold-tip-label' }, 'Tip'),
       el('p', { class: 'fold-tip-text' }, FOLD_TIPS[foldNum])
     ),
+    isLastFold
+      ? el('ol', { class: 'pan-instructions' },
+          el('li', { class: 'pan-instruction' }, PAN_INSTRUCTIONS[0])
+        )
+      : false,
+    isLastFold ? renderLoafChoice() : false,
+    isLastFold
+      ? el('ol', { class: 'pan-instructions pan-instructions--continued', start: '2' },
+          ...PAN_INSTRUCTIONS.slice(1).map(text => el('li', { class: 'pan-instruction' }, text))
+        )
+      : false,
+    isLastFold
+      ? el('div', { class: 'mix-cleanup-tip' },
+          el('p', { class: 'mix-cleanup-heading' }, 'Clean as you go'),
+          el('p', { class: 'mix-cleanup-text' }, `You're now done with the large bowl and small bowl of water.`)
+        )
+      : false,
+    isLastFold ? el('hr', { class: 'mix-divider' }) : false,
     renderTodoList(true),
     el('div', { class: 'fold-return' },
       timerDone
@@ -544,22 +577,22 @@ function renderFoldStep(step) {
             : el('p', { class: 'fold-ready' }, 'Time to get back to it.')
         : false,
       isLastFold
-        ? el('button', { class: 'btn-primary', 'data-action': 'advance-from-fold', disabled: timerRunning }, 'Continue')
+        ? el('button', { class: 'btn-primary', 'data-action': 'start-pan-timer', disabled: timerRunning || !state.loafChoice }, 'Start 25 minute timer')
         : el('button', { class: 'btn-primary', 'data-action': 'advance-and-start-timer', disabled: timerRunning },
             'Start 25 minute timer')
     )
   );
 }
 
-[2, 4, 6, 8].forEach(i => { steps[i].render = () => renderRiseStep(steps[i]); });
-[3, 5, 7, 9].forEach(i => { steps[i].render = () => renderFoldStep(steps[i]); });
+[3, 5, 7, 9].forEach(i => { steps[i].render = () => renderRiseStep(steps[i]); });
+[4, 6, 8, 10].forEach(i => { steps[i].render = () => renderFoldStep(steps[i]); });
 
 /* ─── Pan step content (Step 10) ─────────────────────────────────────────────*/
 const PAN_INSTRUCTIONS = [
-  'Pour a generous amount of olive oil into the pan — about 3 tablespoons for a 9" square, a bit more for a 13×9. Tilt to coat the bottom.',
-  'Scrape the dough into the pan. It will look very loose and wet. That\'s right.',
-  'Turn the dough in the oil to coat it, then gently press it toward the edges. It won\'t reach all the way — leave it. It will spread as it rises.',
-  'Cover and leave it alone.',
+  'Pour about 3 tablespoons of olive oil into your pan. Use your fingertips to fully coat the bottom and the sides of the pan.',
+  'Flop the dough into the oily pan.',
+  'Using your fingertips, press the dough toward the edges of the pan. It won\'t stretch all the way, but will continue spreading as it rises.',
+  'Cover the pan, and let the dough rest for its final rise.',
 ];
 
 const PAN_FOLD_BREAKS = [
@@ -588,11 +621,12 @@ const WCK_URL       = 'https://wck.org/donate';
 /* ─── Loaf choice widget ─────────────────────────────────────────────────────*/
 function renderLoafChoice() {
   const opts = [
-    { value: 'single', label: '9" square pan', sub: 'Thick, tall, chewy center' },
-    { value: 'double', label: '13×9 pan',       sub: 'Thinner, crispier, feeds more' },
+    { value: 'single',       label: '9" square pan', sub: 'Thick, tall, chewy center' },
+    { value: 'double',       label: '13×9"',       sub: 'Thinner, crispier, feeds more' },
+    { value: 'double-split', label: '13×9"',       sub: ['Break into two loaves, so you', el('br', {}), 'can share with a friend'], tag: 'Recommended' },
   ];
   return el('div', { class: 'loaf-choice' },
-    el('p', { class: 'loaf-choice-label' }, 'Which pan are you using?'),
+    el('p', { class: 'loaf-choice-label' }, 'Choose a pan'),
     el('div', { class: 'loaf-options' },
       ...opts.map(opt =>
         el('button', {
@@ -602,8 +636,11 @@ function renderLoafChoice() {
           'data-action': 'select-loaf',
           'data-loaf':   opt.value,
         },
-          el('span', { class: 'loaf-option-label' }, opt.label),
-          el('span', { class: 'loaf-option-sub' },   opt.sub)
+          el('span', { class: 'loaf-option-header' },
+            el('span', { class: 'loaf-option-label' }, opt.label),
+            opt.tag ? el('span', { class: 'checklist-tag' }, opt.tag) : false
+          ),
+          el('span', { class: 'loaf-option-sub' }, ...(Array.isArray(opt.sub) ? opt.sub : [opt.sub]))
         )
       )
     )
@@ -614,8 +651,8 @@ function renderLoafChoice() {
 function renderPanStep() {
   return el('div', { class: 'container pan-step' },
     el('p', { class: 'step-label' }, 'Move Dough to Pan'),
-    el('div', { class: 'pan-instructions' },
-      ...PAN_INSTRUCTIONS.map(text => el('p', { class: 'pan-instruction' }, text))
+    el('ol', { class: 'pan-instructions' },
+      ...PAN_INSTRUCTIONS.map(text => el('li', { class: 'pan-instruction' }, text))
     ),
     renderLoafChoice(),
     renderTodoList(true),
@@ -629,9 +666,7 @@ function renderPanStep() {
   );
 }
 
-steps[10].render = renderPanStep;
-
-/* ─── Pan rise steps (Steps 11, 12) ─────────────────────────────────────────*/
+/* ─── Pan rise steps (Steps 10, 11) ─────────────────────────────────────────*/
 function renderPanRiseStep(step) {
   const isPanRise1 = step.index === 11;
   const foldBreak  = PAN_FOLD_BREAKS[isPanRise1 ? 0 : 1];
@@ -822,7 +857,7 @@ function renderDoneScreen() {
     ),
     el('div', { class: 'done-support' },
       el('p', { class: 'done-support-label' },
-        'Focadoro is free. If it helped, consider donating to World Central Kitchen — feeding people through food.'),
+        'Focacciadoro is free. If it helped, consider donating to World Central Kitchen — feeding people through food.'),
       el('button', { class: 'btn-flour', 'data-action': 'buy-me-flour' },
         'Donate to World Central Kitchen 🌾')
     ),
@@ -830,7 +865,7 @@ function renderDoneScreen() {
       el('p', { class: 'done-feedback-label' }, 'How was your session?'),
       el('a', {
         class: 'btn-ghost',
-        href: 'mailto:hey@carrieflips.com?subject=Focadoro feedback',
+        href: 'mailto:hey@carrieflips.com?subject=Focacciadoro feedback',
       }, 'Send feedback →')
     ),
     el('div', { class: 'done-restart' },
@@ -846,18 +881,6 @@ steps[15].render = renderDoneScreen;
 
 const FAQ_ITEMS = [
   {
-    q: "What's a Pomodoro?",
-    a: "The Pomodoro Technique is a way of working in focused bursts, separated by short breaks. You pick one thing, work on it without interruption for a fixed amount of time, then step away briefly before starting again. The idea is that knowing a break is coming makes it easier to stay focused — and that regular rest prevents the kind of slow mental fade that turns a productive session into a blurry one."
-  },
-  {
-    q: "Why is it called that?",
-    a: "Francesco Cirillo invented the technique as a university student in the late 1980s, using a tomato-shaped kitchen timer to keep himself on track. Pomodoro is Italian for tomato. The timer on your counter is carrying on a proud tradition."
-  },
-  {
-    q: "How does it work?",
-    a: "You work for 25 minutes, then take a 5-minute break. After four cycles, you take a longer break. That's it. The simplicity is the point — there's nothing to configure or optimize. You just start the timer and do the thing."
-  },
-  {
     q: "What's focaccia?",
     a: "Focaccia is a flat Italian bread, dimpled with olive oil and sea salt, with a crust that crackles and an inside that's soft and chewy. It's one of the most forgiving breads you can make — the dough is sticky and loose, it doesn't need to be shaped, and it wants to be left alone between folds. Which, as it turns out, makes it perfect for a focused session."
   },
@@ -866,8 +889,16 @@ const FAQ_ITEMS = [
     a: "About 4 hours from start to finish — which sounds like a lot until you realize most of that time is the dough doing its thing while you're doing yours. You'll spend maybe 20 minutes of active kitchen time across the whole session. The rest is rising, folding, and baking alongside your work. All you need is a clear stretch ahead of you."
   },
   {
-    q: "How does Focadoro work?",
-    a: "Focadoro maps the natural rhythm of making focaccia onto a focused work session. Each 30-minute cycle — 25 minutes of deep work, 5 minutes to fold your dough and reset — becomes one rise. By the time your bread comes out of the oven, you've done four focused work sessions, reflected on how it went, and made something delicious. You just need a bowl, a few ingredients, and somewhere to be for a few hours."
+    q: "How does Focacciadoro work?",
+    a: "Focacciadoro maps the natural rhythm of making focaccia onto a focused work session. Each 30-minute cycle — 25 minutes of deep work, 5 minutes to fold your dough and reset — becomes one rise. By the time your bread comes out of the oven, you've done four focused work sessions, reflected on how it went, and made something delicious. You just need a bowl, a few ingredients, and somewhere to be for a few hours."
+  },
+  {
+    q: "Is focaccia vegan?",
+    a: "Yes. The base recipe is flour, water, salt, yeast, and olive oil — nothing from an animal. It's one of the reasons focaccia has been a staple across the Mediterranean for centuries. Top it with whatever you like."
+  },
+  {
+    q: "Isn't multitasking bad?",
+    a: "Yes — and this isn't multitasking. You're not splitting your attention between bread and work. You're working in focused 25-minute blocks, then fully stepping away to fold the dough, reset, and return. The bread gives the breaks a purpose. It's closer to the opposite of multitasking: a structured rhythm of deep focus and genuine rest."
   },
 ];
 
@@ -901,12 +932,15 @@ const homepage = {
     return el('div', { class: 'homepage-wrapper' },
       el('div', { class: 'container' },
         el('header', { class: 'homepage-hero' },
-          el('h1', { class: 'home-title' }, 'Focadoro'),
-          el('p', { class: 'home-tagline' }, 'Bread and work, in perfect rhythm.'),
+          el('h1', { class: 'home-title' }, 'Focacciadoro'),
+          el('p', { class: 'home-tagline' }, 'Bake bread while you work.'),
           el('p', { class: 'home-intro' },
-            'Focadoro pairs the Pomodoro work rhythm with making focaccia bread. The bread is a bonus — the real product is a structured session that gets you up from your desk, moving your body, and returning to your work with intention. By the time your loaf comes out of the oven, you\'ve had one of your most focused sessions in recent memory.'
+            'In the 1980s, Francesco Cirillo invented a highly effective rhythm of working in 25 minute sessions followed by 5 minute breaks. He tracked his time using a tomato-shaped kitchen timer, and named his method “the pomodoro” (Italian for tomato).'
           ),
-          el('button', { class: 'btn-primary', 'data-action': 'start-session' }, 'Get Prepped')
+          el('p', { class: 'home-intro' },
+            '"Focacciadoro" layers a simple focaccia recipe on top, so you can work while your dough rises, fold the dough during your rests, and finish your task list just as fresh bread comes out of the oven.'
+          ),
+          el('button', { class: 'btn-primary', 'data-action': 'start-session' }, `Let's bake`)
         ),
         renderFAQ(),
         renderQRSection(),
@@ -938,7 +972,12 @@ function renderStepShell(step) {
     return el('div', { class: 'step step--past', 'data-step-index': i },
       el('div', { class: 'container' },
         el('p', { class: 'step-past-name' }, step.name),
-        el('p', { class: 'step-past-summary' }, 'Completed')
+        el('p', { class: 'step-past-summary' }, 'Completed'),
+        el('button', {
+          class: 'btn-secondary step-return-btn',
+          'data-action': 'return-to-step',
+          'data-step-index': String(i),
+        }, 'Return to this step')
       )
     );
   }
@@ -950,7 +989,7 @@ function renderStepShell(step) {
         el('p', { class: 'step-future-time' },
           step.estimatedMinutes > 0 ? `~${step.estimatedMinutes} min` : ''),
         el('button', {
-          class: 'btn-ghost step-skip-btn',
+          class: 'btn-secondary step-skip-btn',
           'data-action': 'skip-to-step',
           'data-step-index': String(i),
         }, 'Skip to this step')
@@ -976,12 +1015,14 @@ function render() {
   const viewed = steps[state.viewedStepIndex];
 
   const children = [
-    renderProgressStrip(),
-    el('div', { class: 'illustration-wrapper' },
+    el('div', { class: 'illustration-wrapper', style: { display: 'none' } },
       el('img', { class: 'illustration-header', src: 'illustration.svg', alt: '' })
     ),
     el('div', { class: 'session-viewport' },
       renderStepShell(viewed)
+    ),
+    el('footer', { class: 'session-footer' },
+      renderProgressStrip()
     ),
   ];
 
@@ -1026,11 +1067,7 @@ function setupStickyTimer() {
   const timerBlock = document.querySelector('.fold-timer-block');
   if (!sentinel || !timerBlock) return;
 
-  // Offset below the sticky progress strip
-  const strip = document.querySelector('.progress-strip');
-  if (strip) {
-    document.documentElement.style.setProperty('--strip-h', strip.offsetHeight + 'px');
-  }
+  document.documentElement.style.setProperty('--strip-h', '0px');
 
   _stickyObserver = new IntersectionObserver(([entry]) => {
     timerBlock.classList.toggle('fold-timer-block--stuck', !entry.isIntersecting);
@@ -1101,7 +1138,7 @@ function startTimer(durationSeconds, onTick, onComplete) {
     if (remaining <= 0) {
       stopTimer();
       playChime();
-      scheduleNotification('Focadoro', 'Your timer is done. Time to fold.', 0);
+      scheduleNotification('Focacciadoro', 'Your timer is done. Time to fold.', 0);
       onComplete();
     }
   }, 1000);
@@ -1205,12 +1242,22 @@ window.deleteTodo    = deleteTodo;
 
 /* ─── Event delegation (single listener, survives re-renders) ────────────────*/
 app.addEventListener('click', (e) => {
-  // Skip-to-step must be checked before the broad step-tap handler below
+  // Skip/return buttons must be checked before the broad step-tap handler below
   const skipBtn = e.target.closest('[data-action="skip-to-step"]');
   if (skipBtn) {
     const idx = parseInt(skipBtn.dataset.stepIndex, 10);
     const stepName = steps[idx].name;
     if (confirm(`Are you sure? This will cancel any current timers and start the timer on ${stepName}.`)) {
+      advanceTo(idx);
+    }
+    return;
+  }
+
+  const returnBtn = e.target.closest('[data-action="return-to-step"]');
+  if (returnBtn) {
+    const idx = parseInt(returnBtn.dataset.stepIndex, 10);
+    const stepName = steps[idx].name;
+    if (confirm(`Are you sure? This will cancel any current timers and return to ${stepName}.`)) {
       advanceTo(idx);
     }
     return;
@@ -1252,12 +1299,17 @@ app.addEventListener('click', (e) => {
     case 'test-notification':
       initAudio();
       playChime();
-      scheduleNotification('Focadoro', 'Notifications are working. Your timer will reach you.', 0);
+      scheduleNotification('Focacciadoro', 'Notifications are working. Your timer will reach you.', 0);
       break;
 
     case 'advance-from-prep':
       track('step_completed', { step_name: 'prep', step_index: 0 });
       advanceTo(1);
+      break;
+
+    case 'begin-baking':
+      track('step_completed', { step_name: 'alarm', step_index: 1 });
+      advanceTo(2);
       break;
 
     case 'amazon-referral':

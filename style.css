@@ -82,7 +82,7 @@ h1 {
 }
 
 h2 {
-  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
 }
 
 h3 {
@@ -109,6 +109,7 @@ small {
   max-width: 480px;
   margin-inline: auto;
   padding-inline: var(--space-lg);
+  padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
 }
 
 #app {
@@ -175,17 +176,22 @@ small {
 
 /* ─── Progress Strip ─────────────────────────────────────────────────────── */
 
+.session-footer {
+  position: sticky;
+  bottom: 0;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+  z-index: 10;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+
 .progress-strip {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
   padding: var(--space-md) var(--space-lg);
-  background: var(--color-bg);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  border-bottom: 1px solid var(--color-border);
 }
 
 .dot {
@@ -237,6 +243,11 @@ small {
   overflow-y: auto;
 }
 
+.session-viewport .btn-primary {
+  width: 100%;
+  text-align: center;
+}
+
 /* ─── Step states ────────────────────────────────────────────────────────── */
 
 .step {
@@ -283,16 +294,12 @@ small {
   cursor: default;
 }
 
-.step-skip-btn {
+.step-skip-btn,
+.step-return-btn {
   pointer-events: all;
   margin-top: var(--space-sm);
-  font-size: 0.75rem;
-  color: var(--color-text-ghost);
-  padding: 0;
-}
-
-.step-skip-btn:hover {
-  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  padding: var(--space-xs) var(--space-sm);
 }
 
 .step-future-name {
@@ -628,7 +635,6 @@ small {
   padding: 2px 6px;
   margin-left: var(--space-xs);
   white-space: nowrap;
-  text-transform: lowercase;
   letter-spacing: 0.02em;
   font-weight: 600;
 }
@@ -738,6 +744,69 @@ small {
 }
 
 /* ─── PWA prompt ─────────────────────────────────────────────────────────── */
+
+/* ─── Alarm section ──────────────────────────────────────────────────────── */
+
+.alarm-section {
+  background: var(--color-past-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-lg);
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.alarm-section-heading {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-md);
+}
+
+.alarm-steps {
+  padding-left: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.alarm-step {
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.alarm-step .btn-secondary,
+.alarm-step .notification-confirmed,
+.alarm-step .notification-warning {
+  display: block;
+  margin-top: var(--space-sm);
+}
+
+.alarm-step-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  width: 100%;
+}
+
+.alarm-step .fold-tip-label {
+  display: block;
+  margin-bottom: var(--space-xs);
+  color: #991B1B;
+}
+
+.alarm-step .notification-confirmed,
+.alarm-step .notification-warning {
+  margin-top: var(--space-sm);
+}
+
+.alarm-step .pwa-instructions {
+  margin-top: var(--space-sm);
+  margin-bottom: 0;
+}
 
 .pwa-prompt {
   background: var(--color-past-bg);
@@ -881,7 +950,7 @@ small {
   flex-direction: column;
   gap: var(--space-md);
   padding-top: var(--space-md);
-  align-items: flex-start;
+  align-items: center;
 }
 
 /* ─── Alarm overlay ──────────────────────────────────────────────────────── */
@@ -1020,6 +1089,41 @@ small {
   font-size: 0.9375rem;
   color: var(--color-text);
   line-height: 1.75;
+}
+
+.fold-instructions--collapsible {
+  padding: 0;
+}
+
+.fold-instructions-summary {
+  padding: var(--space-md) var(--space-lg);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  user-select: none;
+}
+
+.fold-instructions-summary::-webkit-details-marker { display: none; }
+
+.fold-instructions-summary::before {
+  content: '▶';
+  font-size: 0.5rem;
+  color: var(--color-text-ghost);
+  transition: transform 0.15s ease;
+}
+
+details[open] .fold-instructions-summary::before {
+  transform: rotate(90deg);
+}
+
+.fold-instructions--collapsible .fold-instructions-text {
+  padding: 0 var(--space-lg) var(--space-lg);
 }
 
 .fold-tip {
@@ -1266,17 +1370,20 @@ small {
 
 .pan-instructions {
   margin-bottom: var(--space-xl);
+  padding-left: var(--space-lg);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+.pan-instructions--continued {
+  margin-top: 0;
 }
 
 .pan-instruction {
   font-size: 0.9375rem;
   color: var(--color-text);
   line-height: 1.75;
-  padding-left: var(--space-md);
-  border-left: 2px solid var(--color-border);
 }
 
 /* ─── Loaf choice ────────────────────────────────────────────────────────── */
@@ -1297,11 +1404,11 @@ small {
 
 .loaf-options {
   display: flex;
+  flex-direction: column;
   gap: var(--space-sm);
 }
 
 .loaf-option {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1323,6 +1430,14 @@ small {
 .loaf-option--selected {
   border-color: var(--color-accent);
   background: var(--color-past-bg);
+}
+
+.loaf-option-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--space-sm);
 }
 
 .loaf-option-label {
